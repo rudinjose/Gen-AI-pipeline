@@ -1,0 +1,5 @@
+boto3
+pandas
+apache-airflow==2.5.3
+transformers
+torch

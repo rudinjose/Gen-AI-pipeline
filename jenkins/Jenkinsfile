@@ -1,0 +1,37 @@
+pipeline {
+  agent any
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+    stage('Setup Python') {
+      steps {
+        sh 'python3 -m venv venv || true'
+        sh '. venv/bin/activate && pip install --upgrade pip'
+        sh '. venv/bin/activate && pip install -r config/requirements.txt'
+      }
+    }
+    stage('Deploy to Airflow (copy DAGs & scripts)') {
+      steps {
+        // Adjust destination paths on your EC2/Airflow host
+        sh 'mkdir -p /opt/airflow/dags || true'
+        sh 'mkdir -p /opt/airflow/scripts || true'
+        sh 'cp -r airflow/dags/* /opt/airflow/dags/'
+        sh 'cp -r scripts/* /opt/airflow/scripts/'
+      }
+    }
+    stage('Trigger DAG') {
+      steps {
+        // Trigger via Airflow CLI. Ensure airflow home/env is accessible.
+        sh 'airflow dags trigger cars_s3_genai_pipeline_v1 || true'
+      }
+    }
+  }
+  post {
+    always {
+      echo 'Pipeline completed'
+    }
+  }
+}
